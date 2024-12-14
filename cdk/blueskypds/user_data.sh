@@ -115,8 +115,7 @@ openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
   -out /etc/ssl/certs/nginx-selfsigned.crt \
   -subj '/CN=localhost'
 
-# move to AMI
-apt-get update && apt-get install -y nginx
+
 # setup nginx config
 cat <<EOF > /etc/nginx/sites-enabled/blueskypds
 server {
@@ -142,71 +141,7 @@ server {
     }
 }
 EOF
-# remove default site
-rm -f /etc/nginx/sites-enabled/default
 systemctl restart nginx
-
-curl --silent --show-error --fail \
-     --output "/usr/local/bin/pdsadmin" \
-     "https://raw.githubusercontent.com/bluesky-social/pds/refs/tags/v0.4.74/pdsadmin.sh"
-chmod +x /usr/local/bin/pdsadmin
-
-mkdir -p /opt/oe/patterns
-# end move to AMI
-
-# TODO make this EBS mount
-mkdir -p /pds
-chmod 700 /pds
-
-
-# TODO move to AMI
-apt-get update && apt-get install -y python3-boto3
-cat <<EOF > /root/check-secrets.py
-#!/usr/bin/env python3
-
-import boto3
-import json
-import subprocess
-import sys
-
-region_name = sys.argv[1]
-secret_name = sys.argv[2]
-
-client = boto3.client("secretsmanager", region_name=region_name)
-response = client.list_secrets(
-  Filters=[{"Key": "name", "Values": [secret_name]}]
-)
-arn = response["SecretList"][0]["ARN"]
-response = client.get_secret_value(
-  SecretId=arn
-)
-current_secret = json.loads(response["SecretString"])
-needs_update = False
-if not 'pds_jwt_secret' in current_secret:
-  needs_update = True
-  cmd = 'openssl rand --hex 16'
-  output = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True).stdout.decode('utf-8').strip()
-  current_secret['pds_jwt_secret'] = output
-if not 'pds_admin_password' in current_secret:
-  needs_update = True
-  cmd = 'openssl rand --hex 16'
-  output = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True).stdout.decode('utf-8').strip()
-  current_secret['pds_admin_password'] = output
-if not 'pds_plc_rotation_key_k256_private_key_hex' in current_secret:
-  needs_update = True
-  cmd = 'openssl ecparam --name secp256k1 --genkey --noout --outform DER | tail --bytes=+8 | head --bytes=32 | xxd --plain --cols 32'
-  output = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True).stdout.decode('utf-8').strip()
-  current_secret['pds_plc_rotation_key_k256_private_key_hex'] = output
-if needs_update:
-  client.update_secret(
-    SecretId=arn,
-    SecretString=json.dumps(current_secret)
-  )
-else:
-  print('Secrets already generated - no action needed.')
-EOF
-chown root:root /root/check-secrets.py
-chmod 744 /root/check-secrets.py
 
 /root/check-secrets.py ${AWS::Region} ${InstanceSecretName}
 
@@ -216,11 +151,18 @@ aws ssm get-parameter \
     --query Parameter.Value \
 | jq -r . > /opt/oe/patterns/instance.json
 
+ACCESS_KEY_ID=$(cat /opt/oe/patterns/instance.json | jq -r .access_key_id)
+SMTP_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .smtp_password)
 PDS_JWT_SECRET=$(cat /opt/oe/patterns/instance.json | jq -r .pds_jwt_secret)
 PDS_ADMIN_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .pds_admin_password)
 PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX=$(cat /opt/oe/patterns/instance.json | jq -r .pds_plc_rotation_key_k256_private_key_hex)
 
-cat <<PDS_CONFIG >"/pds/pds.env"
+mkdir -p /data/pds
+chmod 700 /data/pds
+# symlink /pds to /data/pds
+ln -sfn /data/pds /pds
+
+cat <<PDS_CONFIG >"/data/pds/pds.env"
 PDS_HOSTNAME="${Hostname}"
 PDS_JWT_SECRET="$PDS_JWT_SECRET"
 PDS_ADMIN_PASSWORD="$PDS_ADMIN_PASSWORD"
@@ -234,24 +176,30 @@ PDS_BSKY_APP_VIEW_DID="did:web:api.bsky.app"
 PDS_REPORT_SERVICE_URL="https://mod.bsky.app"
 PDS_REPORT_SERVICE_DID="did:plc:ar7c4by46qjdydhdevvrndac"
 PDS_CRAWLERS="https://bsky.network"
+PDS_EMAIL_SMTP_URL=smtp://$ACCESS_KEY_ID:$SMTP_PASSWORD@email-smtp.${AWS::Region}.amazonaws.com:587/
+PDS_EMAIL_FROM_ADDRESS=no-reply@${Hostname}
 LOG_ENABLED=true
 PDS_CONFIG
 
-cat <<EOF > /pds/compose.yaml
-version: '3.9'
-services:
-  pds:
-    container_name: pds
-    image: ghcr.io/bluesky-social/pds:0.4
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/instance-id)
+
+# append the rest of the runtime config to the compose.yaml that was created in AMI
+cat <<EOF >> /root/compose.yaml
     restart: unless-stopped
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: ${AsgAppLogGroup}
+        awslogs-stream: $INSTANCE_ID-pds
     ports:
       - "3000:3000"
     volumes:
       - type: bind
-        source: /pds
+        source: /data/pds
         target: /pds
     env_file:
-      - /pds/pds.env
+      - /data/pds/pds.env
 EOF
 
 systemctl enable pds
