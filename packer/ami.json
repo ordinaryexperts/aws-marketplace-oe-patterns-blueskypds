@@ -3,14 +3,14 @@
     "aws_access_key": "{{env `AWS_ACCESS_KEY`}}",
     "aws_secret_key": "{{env `AWS_SECRET_KEY`}}",
     "version": "{{env `VERSION`}}",
-    "ami_name": "amazon/ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-20241001 - ami-0d7d1c852f6af9831"
+    "ami_name": "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-arm64-server-20241206"
   },
   "builders": [
     {
       "type": "amazon-ebs",
       "region": "us-east-1",
-      "source_ami": "ami-0d7d1c852f6af9831",
-      "instance_type": "m5.xlarge",
+      "source_ami": "ami-070669ed9d7e8c691",
+      "instance_type": "m7g.xlarge",
       "ssh_username": "ubuntu",
       "ami_name": "ordinary-experts-patterns-blueskypds-{{user `version`}}-{{isotime \"20060102-0304\"}}"
     }
