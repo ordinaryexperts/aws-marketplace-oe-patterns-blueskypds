@@ -12,7 +12,13 @@
       "source_ami": "ami-070669ed9d7e8c691",
       "instance_type": "m7g.xlarge",
       "ssh_username": "ubuntu",
-      "ami_name": "ordinary-experts-patterns-blueskypds-{{user `version`}}-{{isotime \"20060102-0304\"}}"
+      "ami_name": "ordinary-experts-patterns-blueskypds-{{user `version`}}-{{isotime \"20060102-0304\"}}",
+      "launch_block_device_mappings": [{
+        "device_name": "/dev/sda1",
+        "volume_type": "gp3",
+        "volume_size": 20,
+        "delete_on_termination": true
+      }]
     }
   ],
   "provisioners": [

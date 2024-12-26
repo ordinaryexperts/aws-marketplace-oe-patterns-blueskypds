@@ -41,7 +41,47 @@ cat <<DOCKERD_CONFIG >/etc/docker/daemon.json
 }
 DOCKERD_CONFIG
 
-apt-get update && apt-get install -y nginx
+apt-get update && apt-get install -y nginx php php-fpm php-curl
+# allow php to run the atproto-did script
+echo 'security.limit_extensions = .php .php3 .php4 .php5 .php7 atproto-did' >> /etc/php/8.3/fpm/pool.d/www.conf
+mkdir -p /var/www/html/.well-known
+cat <<'EOF' > /var/www/html/.well-known/atproto-did
+<?php
+// Get the domain (handle) from the HTTP Host header
+$handle = $_SERVER['HTTP_HOST'];
+
+// Define the API endpoint (localhost)
+$api_url = "https://localhost/xrpc/com.atproto.identity.resolveHandle?handle=" . urlencode($handle);
+
+// Use cURL to query the API
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $api_url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0); // Disable host verification for self-signed cert
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable peer verification for self-signed cert
+
+$response = curl_exec($ch);
+$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+curl_close($ch);
+
+// Check if the API returned a successful response
+if ($http_code === 200) {
+    $data = json_decode($response, true);
+    if (isset($data['did'])) {
+        // Return the DID as plain text
+        header("Content-Type: text/plain");
+        echo $data['did'];
+        exit;
+    }
+}
+
+// If the handle is not found or an error occurs, return 404
+http_response_code(404);
+echo "Not Found";
+?>
+EOF
+
 # remove default site
 rm -f /etc/nginx/sites-enabled/default
 
