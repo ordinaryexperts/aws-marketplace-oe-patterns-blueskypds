@@ -10,6 +10,7 @@ tests:
     parameters:
       AlbCertificateArn: arn:aws:acm:us-east-1:992593896645:certificate/5cdb3607-4cef-4d17-90b1-f6592e322277
       AlbIngressCidr: 0.0.0.0/0
+      AsgDataVolumeBackupVaultArn: arn:aws:backup:us-east-1:992593896645:backup-vault:cfn-stack-id-c601c7f0-c591-11ef-89be-0eff4c2890a7
       DnsHostname: "blueskypds-taskcat-$[taskcat_random-string].bluesky.dev.patterns.ordinaryexperts.com"
       DnsRoute53HostedZoneName: dev.patterns.ordinaryexperts.com
       SesCreateDomainIdentity: "false"
