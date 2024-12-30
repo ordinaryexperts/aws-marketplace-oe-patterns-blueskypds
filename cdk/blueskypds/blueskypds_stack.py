@@ -84,7 +84,7 @@ class BlueskypdsStack(Stack):
         dns = Dns(self, "Dns")
 
         # notification topic
-        self.notification_topic = NotificationTopic(
+        notification_topic = NotificationTopic(
             self,
             "NotificationTopic"
         )
@@ -118,7 +118,7 @@ class BlueskypdsStack(Stack):
             "Asg",
             additional_iam_role_policies=[asg_update_secret_policy],
             default_instance_type="t4g.small",
-            notification_topic_arn=self.notification_topic.notification_topic_arn(),
+            notification_topic_arn=notification_topic.notification_topic_arn(),
             secret_arns=[ses.secret_arn()],
             singleton = True,
             use_data_volume = True,
@@ -183,6 +183,7 @@ https://github.com/ordinaryexperts/aws-marketplace-oe-patterns-blueskypds
         parameter_groups += dns.metadata_parameter_group()
         parameter_groups += asg.metadata_parameter_group()
         parameter_groups += ses.metadata_parameter_group()
+        parameter_groups += notification_topic.metadata_parameter_group()
         parameter_groups += vpc.metadata_parameter_group()
 
         # AWS::CloudFormation::Interface
@@ -198,6 +199,7 @@ https://github.com/ordinaryexperts/aws-marketplace-oe-patterns-blueskypds
                     **dns.metadata_parameter_labels(),
                     **asg.metadata_parameter_labels(),
                     **ses.metadata_parameter_labels(),
+                    **notification_topic.metadata_parameter_labels(),
                     **vpc.metadata_parameter_labels()
                 }
             }
