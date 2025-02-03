@@ -26,7 +26,7 @@ The template ensure multi-level security by incorporating AWS IAM for federated 
 "Resource3_Name": "Bluesky PDS GitHub"
 "Resource3_URL": "https://github.com/bluesky-social/pds"
 "Image URL": "https://ordinaryexperts.com/img/products/blueskypds-pattern/blueskypds-product-logo.png"
-"Product Video": ""
+"Product Video": "https://youtu.be/ogFkTIjagtM"
 "Support Offered": "TRUE"
 "Support Information": ""
 "Support Detail": "Email support offered with subscription. https://ordinaryexperts.com/products/blueskypds-pattern/"
