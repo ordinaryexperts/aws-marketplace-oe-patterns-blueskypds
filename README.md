@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Ordinary Experts Bluesky PDS AWS Marketplace product is a CloudFormation template with a custom AMI which provisions a production-ready [Bluesky PDS](https://github.com/bluesky-social/pds) system. It uses the following AWS services:
+The [Ordinary Experts Bluesky PDS AWS Marketplace product](https://aws.amazon.com/marketplace/pp/prodview-i2neneoxrdcko) is a CloudFormation template with a custom AMI which provisions a production-ready [Bluesky PDS](https://github.com/bluesky-social/pds) system. It uses the following AWS services:
 
 * VPC (operator can pass in VPC info or product can create a VPC)
 * EC2 - it provisions an Auto Scaling Group for the web application tier
