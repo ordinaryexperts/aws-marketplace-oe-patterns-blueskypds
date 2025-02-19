@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # aws cloudwatch
-cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+cat <<'EOF' > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 {
   "agent": {
     "metrics_collection_interval": 60,
@@ -14,6 +14,7 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
         "metrics_aggregation_interval": 60
       },
       "disk": {
+        "drop_device": true,
         "measurement": ["used_percent"],
         "metrics_collection_interval": 60,
         "resources": ["*"]
@@ -24,10 +25,7 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
       }
     },
     "append_dimensions": {
-      "ImageId": "\${!aws:ImageId}",
-      "InstanceId": "\${!aws:InstanceId}",
-      "InstanceType": "\${!aws:InstanceType}",
-      "AutoScalingGroupName": "\${!aws:AutoScalingGroupName}"
+      "AutoScalingGroupName": "${!aws:AutoScalingGroupName}"
     }
   },
   "logs": {
@@ -110,14 +108,20 @@ EOF
 systemctl enable amazon-cloudwatch-agent
 systemctl start amazon-cloudwatch-agent
 
+
+# reprovision if access key is rotated
+# access key serial: ${SesInstanceUserAccessKeySerial}
+
+# reprovision if data volume size is changed
+# asg data volume size: ${AsgDataVolumeSize}
+
 openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
   -keyout /etc/ssl/private/nginx-selfsigned.key \
   -out /etc/ssl/certs/nginx-selfsigned.crt \
   -subj '/CN=localhost'
 
-
 # setup nginx config
-cat <<EOF > /etc/nginx/sites-enabled/blueskypds
+cat <<'EOF' > /etc/nginx/sites-enabled/blueskypds
 server {
     listen 443 ssl;
     server_name ${Hostname};
@@ -129,14 +133,23 @@ server {
     access_log /var/log/nginx/access.log;
     error_log /var/log/nginx/error.log;
 
+    # Specific handler for `atproto-did` to treat it as a PHP file
+    location = /.well-known/atproto-did {
+        root /var/www/html;
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root/.well-known/atproto-did;
+        include fastcgi_params;
+    }
+
     location / {
         proxy_pass http://localhost:3000;
         proxy_set_header Host ${Hostname};
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "Upgrade";
     }
 }
@@ -152,7 +165,10 @@ aws ssm get-parameter \
 | jq -r . > /opt/oe/patterns/instance.json
 
 ACCESS_KEY_ID=$(cat /opt/oe/patterns/instance.json | jq -r .access_key_id)
-SMTP_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .smtp_password)
+# should be URL encoded...
+SMTP_PASSWORD=$(cat /opt/oe/patterns/instance.json \
+  | jq -r .smtp_password \
+  | python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.stdin.read().strip(), safe=""))')
 PDS_JWT_SECRET=$(cat /opt/oe/patterns/instance.json | jq -r .pds_jwt_secret)
 PDS_ADMIN_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .pds_admin_password)
 PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX=$(cat /opt/oe/patterns/instance.json | jq -r .pds_plc_rotation_key_k256_private_key_hex)
@@ -204,7 +220,13 @@ EOF
 
 systemctl enable pds
 systemctl restart pds
-
-echo hi
 success=$?
 cfn-signal --exit-code $success --stack ${AWS::StackName} --resource Asg --region ${AWS::Region}
+
+# maybe request crawl based on value of RequestCrawlFromBluesky parameter
+sleep 60
+if [[ $success -eq 0 && "${RequestCrawlFromBluesky}" == "true" ]]
+then
+    pdsadmin request-crawl bsky.network
+fi
+
