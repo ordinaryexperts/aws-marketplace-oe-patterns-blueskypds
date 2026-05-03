@@ -16,7 +16,7 @@ There is a sibling Terraform wrapper at `../terraform-aws-marketplace-oe-pattern
 
 ## Upgrade Workflow
 
-For upgrading the upstream PDS version, follow the cross-pattern process in [aws-marketplace-utilities/UPGRADE.md](https://github.com/ordinaryexperts/aws-marketplace-utilities/blob/main/UPGRADE.md). The blueskypds-specific notes below supplement that doc.
+For upgrading the upstream PDS version, follow the cross-pattern process in [aws-marketplace-utilities/UPGRADE.md](https://github.com/ordinaryexperts/aws-marketplace-utilities/blob/develop/UPGRADE.md). The blueskypds-specific notes below supplement that doc.
 
 ### Blueskypds-specific notes
 
