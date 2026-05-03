@@ -1,0 +1,20 @@
+# Integration test configuration for Bluesky PDS pattern.
+# Override values via environment variables: TEST_BASE_URL, TEST_STACK_NAME, AWS_REGION.
+
+application:
+  name: "Bluesky PDS"
+  health_endpoint: "/xrpc/_health"
+  describe_server_endpoint: "/xrpc/com.atproto.server.describeServer"
+  expected_version: "0.4.219"
+
+aws:
+  region: "us-east-1"
+  stack_name: "oe-patterns-blueskypds-dylan"
+
+test:
+  timeout: 30
+  retry_attempts: 3
+  retry_delay: 2
+
+urls:
+  base_url: "https://blueskypds.dev.patterns.ordinaryexperts.com"
