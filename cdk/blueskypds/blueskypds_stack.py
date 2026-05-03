@@ -5,7 +5,6 @@ from aws_cdk import (
     Aws,
     aws_cloudwatch,
     aws_iam,
-    CfnMapping,
     CfnOutput,
     CfnParameter,
     Stack
@@ -27,36 +26,8 @@ else:
     except:
         template_version = "CICD"
 
-AMI_ID="ami-0328e137eefbb9268"
-AMI_NAME="ordinary-experts-patterns-blueskypds-1.0.0-2-gdf3fc07-20250219-0328"
-generated_ami_ids = {
-    "af-south-1": "ami-XXXXXXXXXXXXXXXXX",
-    "ap-east-1": "ami-XXXXXXXXXXXXXXXXX",
-    "ap-northeast-1": "ami-XXXXXXXXXXXXXXXXX",
-    "ap-northeast-2": "ami-XXXXXXXXXXXXXXXXX",
-    "ap-northeast-3": "ami-XXXXXXXXXXXXXXXXX",
-    "ap-south-1": "ami-XXXXXXXXXXXXXXXXX",
-    "ap-southeast-1": "ami-XXXXXXXXXXXXXXXXX",
-    "ap-southeast-2": "ami-XXXXXXXXXXXXXXXXX",
-    "ap-southeast-3": "ami-XXXXXXXXXXXXXXXXX",
-    "ca-central-1": "ami-XXXXXXXXXXXXXXXXX",
-    "eu-central-1": "ami-XXXXXXXXXXXXXXXXX",
-    "eu-central-2": "ami-XXXXXXXXXXXXXXXXX",
-    "eu-north-1": "ami-XXXXXXXXXXXXXXXXX",
-    "eu-south-1": "ami-XXXXXXXXXXXXXXXXX",
-    "eu-south-2": "ami-XXXXXXXXXXXXXXXXX",
-    "eu-west-1": "ami-XXXXXXXXXXXXXXXXX",
-    "eu-west-2": "ami-XXXXXXXXXXXXXXXXX",
-    "eu-west-3": "ami-XXXXXXXXXXXXXXXXX",
-    "me-central-1": "ami-XXXXXXXXXXXXXXXXX",
-    "me-south-1": "ami-XXXXXXXXXXXXXXXXX",
-    "sa-east-1": "ami-XXXXXXXXXXXXXXXXX",
-    "us-east-2": "ami-XXXXXXXXXXXXXXXXX",
-    "us-west-1": "ami-XXXXXXXXXXXXXXXXX",
-    "us-west-2": "ami-XXXXXXXXXXXXXXXXX",
-    "us-east-1": "ami-0328e137eefbb9268"
-}
-# End generated code block.
+AMI_ID = "ami-012bb7bde8c0dabec"  # ordinary-experts-patterns-blueskypds-2.0.0-20260502-1054 (dev)
+NEXT_RELEASE_PREFIX = "v200"
 
 class BlueskypdsStack(Stack):
 
@@ -114,11 +85,13 @@ class BlueskypdsStack(Stack):
             self,
             "Asg",
             additional_iam_role_policies=[asg_update_secret_policy],
+            ami_id=AMI_ID,
+            ami_id_param_name_suffix=NEXT_RELEASE_PREFIX,
             default_instance_type="t4g.small",
             notification_topic_arn=notification_topic.notification_topic_arn(),
             secret_arns=[ses.secret_arn()],
-            singleton = True,
-            use_data_volume = True,
+            singleton=True,
+            use_data_volume=True,
             user_data_contents=user_data,
             user_data_variables={
                 "Hostname": dns.hostname(),
@@ -126,15 +99,6 @@ class BlueskypdsStack(Stack):
                 "InstanceSecretName": Aws.STACK_NAME + "/instance/credentials"
             },
             vpc=vpc
-        )
-
-        ami_mapping={ "AMI": { "OEAMI": AMI_NAME } }
-        for region in generated_ami_ids.keys():
-            ami_mapping[region] = { "AMI": generated_ami_ids[region] }
-        CfnMapping(
-            self,
-            "AWSAMIRegionMap",
-            mapping=ami_mapping
         )
 
         alb = Alb(

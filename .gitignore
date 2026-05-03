@@ -28,3 +28,12 @@ scripts/common/*
 
 # plf
 plf*.xlsx
+
+# AMI build logs
+logs/
+
+# marketplace catalog changeset id (written by `make marketplace-submit`)
+.marketplace_changeset
+
+# integration test virtualenv
+test/integration/venv
