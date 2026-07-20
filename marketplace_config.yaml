@@ -58,4 +58,4 @@ delivery_option:
 
     - Route 53 hosted zone for DNS
     - ACM certificate for HTTPS (must cover the apex hostname and the *.<hostname> wildcard for user handles)
-  architecture_diagram_url: "https://ordinary-experts-aws-marketplace-pattern-artifacts.s3.amazonaws.com/blueskypds/2.0.0/diagram.png"
+  architecture_diagram_url: "https://ordinary-experts-aws-marketplace-pattern-artifacts.s3.amazonaws.com/blueskypds/2.1.0/diagram.png"

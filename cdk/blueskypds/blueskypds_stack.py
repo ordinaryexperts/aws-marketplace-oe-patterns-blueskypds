@@ -26,7 +26,7 @@ else:
     except:
         template_version = "CICD"
 
-AMI_ID = "ami-084d5031be9bf8771"  # ordinary-experts-patterns-blueskypds-2.1.0-20260720-0351 (dev — for taskcat)
+AMI_ID = "ami-042f8d9538d2cdf98"  # ordinary-experts-patterns-blueskypds-2.1.0-20260720-0503 (prod — for Marketplace submission)
 NEXT_RELEASE_PREFIX = "v210"
 
 class BlueskypdsStack(Stack):
