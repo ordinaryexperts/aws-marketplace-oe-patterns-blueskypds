@@ -1,5 +1,15 @@
 # Unreleased
 
+# 2.1.0
+
+* Upgrade Bluesky PDS from `0.4.219` to `0.4.5009` (latest upstream)
+* Switch CloudFormation AMI parameter from `AsgAmiIdv200` to `AsgAmiIdv210` (versioned parameter convention) so stack updates surface AMI changes correctly
+
+## Migration notes
+
+* **Existing subscribers updating an in-place stack from 2.0.0 must update the parameter name** in their stack-update wizard from `AsgAmiIdv200` to `AsgAmiIdv210`. CloudFormation treats this as a real parameter change so the AMI swap is correctly applied.
+* No data-format or upstream config breaking changes between PDS `0.4.219` and `0.4.5009` -- `pds.env` shape is unchanged and the SQLite + blob store on the EBS data volume are read by the new image as-is.
+
 # 2.0.0
 
 * Upgrade Bluesky PDS from `0.4.74` to `0.4.219` (latest upstream)

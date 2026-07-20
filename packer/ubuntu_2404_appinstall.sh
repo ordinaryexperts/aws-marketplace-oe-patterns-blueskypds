@@ -13,7 +13,7 @@ rm $SCRIPT_PREINSTALL
 #  * https://github.com/bluesky-social/pds?tab=readme-ov-file#self-hosting-pds
 #
 
-PDS_VERSION=0.4.219
+PDS_VERSION=0.4.5009
 
 apt-get update && apt-get upgrade -y
 

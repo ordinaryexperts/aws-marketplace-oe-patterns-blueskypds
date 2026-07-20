@@ -8,7 +8,7 @@ deploy: build
 	--require-approval never \
 	--parameters AlbCertificateArn=arn:aws:acm:us-east-1:992593896645:certificate/951d2b92-e609-4c1c-aaab-d3f07ef43971 \
 	--parameters AlbIngressCidr=0.0.0.0/0 \
-	--parameters AsgAmiIdv200=ami-012bb7bde8c0dabec \
+	--parameters AsgAmiIdv210=ami-084d5031be9bf8771 \
 	--parameters AsgDataVolumeSize=102 \
 	--parameters AsgReprovisionString=20241219.1 \
 	--parameters AsgDiskUsageAlarmThreshold=75 \
